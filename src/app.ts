@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class Game {
   camera: THREE.PerspectiveCamera;
@@ -24,12 +26,33 @@ export class Game {
 
   }
   init() {
+    // 设置摄像机初始位置
+    this.camera.position.z = 5;
+    const control = new OrbitControls(this.camera, this.renderer.domElement)
+
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new THREE.Mesh(geometry, material);
     this.scene.add(cube);
-    // 设置摄像机初始位置
-    this.camera.position.z = 5;
+
+
+    const gltfLoader = new GLTFLoader();
+    console.log(gltfLoader);
+    gltfLoader.load('/car.glb', (obj) => {
+      this.scene.add(obj.scene)
+    })
+    gltfLoader.load('/ground.glb', (obj) => {
+      this.scene.add(obj.scene)
+      
+    })
+
+    const rgbeLoader = new RGBELoader()
+    rgbeLoader.load('/hdr.hdr', (skyTexture) => {
+      this.scene.background = skyTexture
+      this.scene.environment = skyTexture
+      skyTexture.mapping = THREE.EquirectangularReflectionMapping
+    })
+
 
   }
 
