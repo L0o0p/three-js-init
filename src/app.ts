@@ -5,14 +5,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 export class Game {
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
-  cameraTarget: THREE.Object3D | null;
   scene: THREE.Scene;
-  cameraOffset: THREE.Vector3;
   smoothness: number;
   cubeRenderTarget: THREE.WebGLCubeRenderTarget;
   cubeCamera: THREE.CubeCamera;
-  ground!: THREE.Mesh; // 添加反射物体
-
 
   constructor() {
     // 场景和摄像机
@@ -22,8 +18,8 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
-    this.cameraTarget = null;// playerMesh
-    this.cameraOffset = new THREE.Vector3(0, 3, 5);
+    // this.cameraTarget = null;// playerMesh
+    // this.cameraOffset = new THREE.Vector3(0, 3, 5);
     // this.cameraOffset = new THREE.Vector3(0, 1.8, 1);
     this.smoothness = 0.1; // 相机移动平滑度
     // 创建立方体渲染目标
@@ -41,51 +37,29 @@ export class Game {
     this.camera.position.z = 5;
     const control = new OrbitControls(this.camera, this.renderer.domElement)
 
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0, 1, 0)
-    this.scene.add(cube);
-
     // 创建使用环境贴图的材质
     const reflectiveMaterial = new THREE.MeshStandardMaterial({
       envMap: this.cubeRenderTarget.texture,
       roughness: 0.05,
       metalness: 1.0
     });
-    // this.reflectiveCube = new THREE.Mesh(geometry, reflectiveMaterial);
-    // this.reflectiveCube.position.set(0, 1, 0);
-    // this.scene.add(this.reflectiveCube);
 
     const gltfLoader = new GLTFLoader();
     console.log(gltfLoader);
-    gltfLoader.load('/car.glb', (obj) => {
-      this.scene.add(obj.scene)
-    })
-
-
-    gltfLoader.load('/ground.glb', (obj) => {
-
+    gltfLoader.load('/monkey.glb', (obj) => {
       obj.scene.traverse((child: any) => {
-        if (child.name === 'ground' && child.isMesh) {
-          child.visible = false
-          child.material = reflectiveMaterial
-          child.material.side = THREE.FrontSide;
-          child.visible = true
-          this.ground = child
-        }
+        child.castShadow = true
+        child.receiveShadow = true
       })
       this.scene.add(obj.scene)
-
     })
 
-    const rgbeLoader = new RGBELoader()
-    rgbeLoader.load('/hdr.hdr', (skyTexture) => {
-      this.scene.background = skyTexture
-      this.scene.environment = skyTexture
-      skyTexture.mapping = THREE.EquirectangularReflectionMapping
-    })
-
+    // const rgbeLoader = new RGBELoader()
+    // rgbeLoader.load('/sky.hdr', (skyTexture) => {
+    //   this.scene.background = skyTexture
+    //   this.scene.environment = skyTexture
+    //   skyTexture.mapping = THREE.EquirectangularReflectionMapping
+    // })
 
   }
 
@@ -96,23 +70,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
   animate() {
-    requestAnimationFrame(this.animate.bind(this));
-    // ========================== cubeCamera ==========================
-    // 重要：更新立方体相机
-    // 要暂时隐藏反射物体，避免它出现在自己的反射中
-    this.ground.visible = false;
-    // 将立方体相机放置在反射物体的位置上
-    this.cubeCamera.position.copy(this.camera.position);
-    this.cubeCamera.position.y *= -1
-    // 更新立方体相机的环境贴图
-    this.cubeCamera.update(this.renderer, this.scene);
-    // 让反射物体重新可见
-    this.ground.visible = true;
-    // ========================== cubeCamera ==========================
-
     this.renderer.render(this.scene, this.camera);
-    THREE.CubeCamera
-
   }
 
   async run() {
