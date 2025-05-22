@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls, RGBELoader } from 'three/examples/jsm/Addons.js';
+import { OrbitControls, plane, RGBELoader } from 'three/examples/jsm/Addons.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class Game {
@@ -16,6 +16,9 @@ export class Game {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer();
+    this.renderer = new THREE.WebGLRenderer();
+    this.renderer.shadowMap.enabled = true; // 必须启用
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 更好的阴影质量
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
     // this.cameraTarget = null;// playerMesh
@@ -37,12 +40,20 @@ export class Game {
     this.camera.position.z = 5;
     const control = new OrbitControls(this.camera, this.renderer.domElement)
 
-    // 创建使用环境贴图的材质
-    const reflectiveMaterial = new THREE.MeshStandardMaterial({
-      envMap: this.cubeRenderTarget.texture,
-      roughness: 0.05,
-      metalness: 1.0
-    });
+    // 环境光
+    const ambient = new THREE.AmbientLight(0xffffff, 1);
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.castShadow = true
+    // 点光源
+    this.scene.add(ambient, light)
+
+    const plane = new THREE.PlaneGeometry(100, 100, 10, 10);
+    const ground = new THREE.Mesh(plane, new THREE.MeshStandardMaterial({ color: 0x7777777 }));
+    ground.position.y = -1
+    ground.rotation.x = -Math.PI / 2;
+    ground.castShadow = true;
+    ground.receiveShadow = true;
+    this.scene.add(ambient, ground)
 
     const gltfLoader = new GLTFLoader();
     console.log(gltfLoader);
@@ -54,12 +65,12 @@ export class Game {
       this.scene.add(obj.scene)
     })
 
-    // const rgbeLoader = new RGBELoader()
-    // rgbeLoader.load('/sky.hdr', (skyTexture) => {
-    //   this.scene.background = skyTexture
-    //   this.scene.environment = skyTexture
-    //   skyTexture.mapping = THREE.EquirectangularReflectionMapping
-    // })
+    const rgbeLoader = new RGBELoader()
+    rgbeLoader.load('/sky.hdr', (skyTexture) => {
+      this.scene.background = skyTexture
+      this.scene.environment = skyTexture
+      skyTexture.mapping = THREE.EquirectangularReflectionMapping
+    })
 
   }
 
@@ -70,6 +81,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
   animate() {
+    requestAnimationFrame(() => this.animate());
     this.renderer.render(this.scene, this.camera);
   }
 
